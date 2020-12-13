@@ -59,13 +59,6 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
-	/*std::string message = "PASS ";
-	message += std::getenv("BPUR_PASSWORD");
-	send(sock, message.c_str(), message.length(), 0);
-	message = "NICK ";
-	message += std::getenv("BPUR_USERNAME");
-	send(sock, message.c_str(), message.length(), 0);*/
-
 	char* password;
 	size_t envsize;
 	getenv_s(&envsize, NULL, 0, "BPUR_PASSWORD");
@@ -83,7 +76,8 @@ int main(int argc, char** argv)
 	getenv_s(&envsize, password, envsize, "BPUR_PASSWORD");
 	std::string message = "PASS ";
 	message += password;
-	send(sock, message.c_str(), message.length(), MSG_OOB);
+	message += "\r\n";
+	send(sock, message.c_str(), message.length(), 0);
 
 	char* username;
 	getenv_s(&envsize, NULL, 0, "BPUR_USERNAME");
@@ -101,13 +95,8 @@ int main(int argc, char** argv)
 	getenv_s(&envsize, username, envsize, "BPUR_USERNAME");
 	message = "NICK ";
 	message += username;
-	send(sock, message.c_str(), message.length(), MSG_OOB);
-
-	message = "USER ";
-	message += username;
-	message += " 8 * :";
-	message += username;
-	send(sock, message.c_str(), message.length(), MSG_OOB);
+	message += "\r\n";
+	send(sock, message.c_str(), message.length(), 0);
 
 	char* channel;
 	getenv_s(&envsize, NULL, 0, "BPUR_CHANNEL");
@@ -125,13 +114,8 @@ int main(int argc, char** argv)
 	getenv_s(&envsize, channel, envsize, "BPUR_CHANNEL");
 	message = "JOIN #";
 	message += channel;
-	send(sock, message.c_str(), message.length(), MSG_OOB);
-
-	char* buff = new char[1024];
-	while (recv(sock, buff, 1024, 0))
-		std::cout << &buff[0] << std::endl;
-
-
+	message += "\r\n";
+	send(sock, message.c_str(), message.length(), 0);
 
 	//fileread code
 	if (argv[1] && fs::exists(fs::path(argv[1])))
@@ -139,7 +123,12 @@ int main(int argc, char** argv)
 		std::ifstream list(argv[1]);
 		for (std::string line; std::getline(list, line); )
 		{
-			std::cout << line << std::endl;
+			message = "/ban " + line + "\r\n";
+			message = std::string(":") + username + std::string("!") + username + std::string("@") + username +
+				std::string(".tmi.twitch.tv PRIVMSG #") + channel + std::string(" :") + message;
+			//message = std::string("PRIVMSG #") + channel + std::string(" :") + message;
+			send(sock, message.c_str(), message.length(), 0);
+			Sleep(340);
 		}
 	}
 	else
@@ -147,6 +136,6 @@ int main(int argc, char** argv)
 	free(password);
 	free(username);
 	free(channel);
-	delete [] buff;
+	std::cout << "beep!\n";
 	std::cin.get();
 }
